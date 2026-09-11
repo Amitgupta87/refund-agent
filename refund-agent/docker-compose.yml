@@ -1,0 +1,48 @@
+name: refund-agent
+
+services:
+  # One-shot: create schema + seed 15 profiles into the shared SQLite volume,
+  # then exit. Backend waits for this to complete successfully before starting.
+  db-seed:
+    build: ./backend
+    image: refund-agent-backend:latest
+    command: ["python", "-m", "app.seed"]
+    environment:
+      DB_PATH: /data/refund.db
+    volumes:
+      - db-data:/data
+    restart: "no"
+
+  backend:
+    build: ./backend
+    image: refund-agent-backend:latest
+    env_file:
+      - .env
+    environment:
+      # Overrides DB_PATH from .env so the API uses the shared volume.
+      DB_PATH: /data/refund.db
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+    volumes:
+      - db-data:/data
+    depends_on:
+      db-seed:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    image: refund-agent-frontend:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:

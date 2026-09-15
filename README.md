@@ -22,7 +22,7 @@ For the in-depth QA / company test plan, see **[HANDOVER.md](./HANDOVER.md)**.
 ## 1. Quickstart
 
 ```bash
-git clone <repo-url> && cd refund-agent
+
 
 cp .env.example .env
 # In .env, set ONE provider + its key:
